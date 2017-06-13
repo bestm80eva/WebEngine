@@ -3,7 +3,7 @@
  * WebEngine
  * http://muengine.net/
  * 
- * @version 1.0.9
+ * @version 2.0.0
  * @author Lautaro Angelico <http://lautaroangelico.com/>
  * @copyright (c) 2013-2017 Lautaro Angelico, All Rights Reserved
  * 
@@ -11,543 +11,286 @@
  * http://opensource.org/licenses/MIT
  */
 
-class Account extends common {
+class Account {
 	
-	public function registerAccount($username, $password, $cpassword, $email) {
+	protected $_userid;
+	protected $_username;
+	protected $_password;
+	protected $_newPassword;
+	protected $_email;
+	protected $_serial = '111111111111';
+	
+	protected $_accountData;
+	protected $_verificationKey;
+	
+	function __construct() {
+		global $dB, $dB2;
 		
-		if(!check_value($username)) throw new Exception(lang('error_4',true));
-		if(!check_value($password)) throw new Exception(lang('error_4',true));
-		if(!check_value($cpassword)) throw new Exception(lang('error_4',true));
-		if(!check_value($email)) throw new Exception(lang('error_4',true));
-
-		// Filters
-		if(!Validator::UsernameLength($username)) throw new Exception(lang('error_5',true));
-		if(!Validator::AlphaNumeric($username)) throw new Exception(lang('error_6',true));
-		if(!Validator::PasswordLength($password)) throw new Exception(lang('error_7',true));
-		if($password != $cpassword) throw new Exception(lang('error_8',true));
-		if(!Validator::Email($email)) throw new Exception(lang('error_9',true));
-		
-		# load registration configs
-		$regCfg = loadConfigurations('register');
-		
-		# check if username / email exists
-		if($this->userExists($username)) throw new Exception(lang('error_10',true));
-		if($this->emailExists($email)) throw new Exception(lang('error_11',true));
-		
-		# WebEngine Email Verification System (EVS)
-		if($regCfg['verify_email']) {
-			# check if username / email exists
-			if($this->checkUsernameEVS($username)) throw new Exception(lang('error_10',true));
-			if($this->checkEmailEVS($email)) throw new Exception(lang('error_11',true));
-			
-			# generate verification key
-			$verificationKey = $this->createRegistrationVerification($username,$password,$email);
-			if(!check_value($verificationKey)) throw new Exception(lang('error_23',true));
-			
-			# send verification email
-			$this->sendRegistrationVerificationEmail($username,$email,$verificationKey);
-			message('success', lang('success_18',true));
-			return;
-		}
-		
-		# insert data
-		$data = array(
-			'username' => $username,
-			'password' => $password,
-			'name' => 'webengine',
-			'serial' => '111111111111',
-			'email' => $email
-		);
-		
-		# query
-		if($this->_md5Enabled) {
-			$query = "INSERT INTO "._TBL_MI_." ("._CLMN_USERNM_.", "._CLMN_PASSWD_.", "._CLMN_MEMBNAME_.", "._CLMN_SNONUMBER_.", "._CLMN_EMAIL_.", "._CLMN_BLOCCODE_.", "._CLMN_CTLCODE_.") VALUES (:username, [dbo].[fn_md5](:password, :username), :name, :serial, :email, 0, 0)";
-		} else {
-			$query = "INSERT INTO "._TBL_MI_." ("._CLMN_USERNM_.", "._CLMN_PASSWD_.", "._CLMN_MEMBNAME_.", "._CLMN_SNONUMBER_.", "._CLMN_EMAIL_.", "._CLMN_BLOCCODE_.", "._CLMN_CTLCODE_.") VALUES (:username, :password, :name, :serial, :email, 0, 0)";
-		}
-		
-		# register account
-		$result = $this->db->query($query, $data);
-		if(!$result) throw new Exception(lang('error_22',true));
-		
-		# send welcome email
-		if($regCfg['send_welcome_email']) {
-			$this->sendWelcomeEmail($username, $email);
-		}
-		
-		# free vip days
-		if($regCfg['freevip_enable']) {
-			switch($this->_serverFiles) {
-				case 'MUE':
-					$vip = new Vip();
-					$this->updateVipTimeStamp($this->db->lastInsertId(), $vip->CalculateTimestamp($regCfg['freevip_days']));
-					break;
-				default:
-					break;
-			}
-		}
-		
-		# success message
-		message('success', lang('success_1',true));
-		
-		# redirect to login (5 seconds)
-		redirect(2,'login/',5);
+		$this->db = (config('SQL_USE_2_DB',true) ? $dB2 : $dB);
+		$this->_md5Enabled = config('SQL_ENABLE_MD5', true);
 	}
 	
-	public function changePasswordProcess($userid, $username, $password, $new_password, $confirm_new_password) {
-		if(!check_value($userid)) throw new Exception(lang('error_4',true));
-		if(!check_value($username)) throw new Exception(lang('error_4',true));
-		if(!check_value($password)) throw new Exception(lang('error_4',true));
-		if(!check_value($new_password)) throw new Exception(lang('error_4',true));
-		if(!check_value($confirm_new_password)) throw new Exception(lang('error_4',true));
-		if(!Validator::PasswordLength($new_password)) throw new Exception(lang('error_7',true));
-		if($new_password != $confirm_new_password) throw new Exception(lang('error_8',true));
+	/**
+	 * setVerificationKey
+	 * sets the verification key value
+	 */
+	public function setVerificationKey($value) {
+		if(!check_value($value)) throw new Exception('');
+		if(!Validator::Number($value)) throw new Exception('');
+		if(!Validator::UnsignedNumber($value)) throw new Exception('');
 		
-		# check user credentials
-		if(!$this->validateUser($username, $password)) throw new Exception(lang('error_13',true));
-		
-		# check online status
-		if($this->accountOnline($username)) throw new Exception(lang('error_14',true));
-		
-		# change password
-		if(!$this->changePassword($userid, $username, $new_password)) throw new Exception(lang('error_23',true));
-		
-		# send email with new password
-		$accountData = $this->accountInformation($userid);
-		try {
-			$email = new Email();
-			$email->setTemplate('CHANGE_PASSWORD');
-			$email->addVariable('{USERNAME}', $username);
-			$email->addVariable('{NEW_PASSWORD}', $new_password);
-			$email->addAddress($accountData[_CLMN_EMAIL_]);
-			$email->send();
-		} catch (Exception $ex) {}
-		
-		# success message
-		message('success', lang('success_2',true));
+		$this->_verificationKey = $value;
 	}
 	
-	public function changePasswordProcess_verifyEmail($userid, $username, $password, $new_password, $confirm_new_password, $ip_address) {
-		if(!check_value($userid)) throw new Exception(lang('error_4',true));
-		if(!check_value($username)) throw new Exception(lang('error_4',true));
-		if(!check_value($password)) throw new Exception(lang('error_4',true));
-		if(!check_value($new_password)) throw new Exception(lang('error_4',true));
-		if(!check_value($confirm_new_password)) throw new Exception(lang('error_4',true));
-		if(!Validator::PasswordLength($new_password)) throw new Exception(lang('error_7',true));
-		if($new_password != $confirm_new_password) throw new Exception(lang('error_8',true));
+	/**
+	 * setUserid
+	 * sets the user id
+	 */
+	public function setUserid($value) {
+		if(!check_value($value)) throw new Exception('The user id you entered is not valid.');
+		if(!Validator::AccountId($value)) throw new Exception('The user id you entered is not valid.');
 		
-		# load changepw configs
-		$mypassCfg = loadConfigurations('usercp.mypassword');
+		$this->_userid = $value;
+	}
+	
+	/**
+	 * setUsername
+	 * sets the username
+	 */
+	public function setUsername($value) {
+		if(!check_value($value)) throw new Exception('The username you entered is not valid.');
+		if(!Validator::AccountUsername($value)) throw new Exception('The username you entered is not valid.');
 		
-		# check user credentials
-		if(!$this->validateUser($username, $password)) throw new Exception(lang('error_13',true));
+		$this->_username = $value;
+	}
+	
+	/**
+	 * setPassword
+	 * sets the password
+	 */
+	public function setPassword($value) {
+		if(!check_value($value)) throw new Exception('The password you entered is not valid.');
+		if(!Validator::AccountPassword($value)) throw new Exception('The password you entered is not valid.');
 		
-		# check online status
-		if($this->accountOnline($username)) throw new Exception(lang('error_14',true));
+		$this->_password = $value;
+	}
+	
+	/**
+	 * setNewPassword
+	 * sets the new password
+	 */
+	public function setNewPassword($value) {
+		if(!check_value($value)) throw new Exception('The new password you entered is not valid.');
+		if(!Validator::AccountPassword($value)) throw new Exception('The new password you entered is not valid.');
 		
-		# check if user has an active password change request
-		if($this->hasActivePasswordChangeRequest($userid)) throw new Exception(lang('error_19',true));
+		$this->_newPassword = $value;
+	}
+	
+	/**
+	 * setEmail
+	 * sets the email
+	 */
+	public function setEmail($value) {
+		if(!check_value($value)) throw new Exception('The email address you entered is not valid.');
+		if(!Validator::AccountEmail($value)) throw new Exception('The email address you entered is not valid.');
 		
-		# load account data
-		$accountData = $this->accountInformation($userid);
-		if(!is_array($accountData)) throw new Exception(lang('error_21',true));
-		
-		# request data
-		$auth_code = mt_rand(111111,999999);
-		$link = $this->generatePasswordChangeVerificationURL($userid, $auth_code);
-		
-		# add request to database
-		$addRequest = $this->addPasswordChangeRequest($userid, $new_password, $auth_code);
-		if(!$addRequest) throw new Exception(lang('error_21',true));
-		
-		# send verification email
-		try {
-			$email = new Email();
-			$email->setTemplate('CHANGE_PASSWORD_EMAIL_VERIFICATION');
-			$email->addVariable('{USERNAME}', $username);
-			$email->addVariable('{DATE}', date("m/d/Y @ h:i a"));
-			$email->addVariable('{IP_ADDRESS}', $ip_address);
-			$email->addVariable('{LINK}', $link);
-			$email->addVariable('{EXPIRATION_TIME}', $mypassCfg['change_password_request_timeout']);
-			$email->addAddress($accountData[_CLMN_EMAIL_]);
-			$email->send();
-			
-			message('success', lang('success_3',true));
-		} catch (Exception $ex) {
-			message('error', lang('error_20',true));
+		$this->_email = $value;
+	}
+	
+	/**
+	 * usernameExists
+	 * checks if the username is in use
+	 */
+	public function usernameExists() {
+		if(!check_value($this->_username)) return;
+		$result = $this->db->query_fetch_single("SELECT "._CLMN_USERNM_." FROM "._TBL_MI_." WHERE "._CLMN_USERNM_." = ?", array($this->_username));
+		if(!is_array($result)) return;
+		return true;
+	}
+	
+	/**
+	 * emailExists
+	 * checks if the email address is in use
+	 */
+	public function emailExists() {
+		if(!check_value($this->_email)) return;
+		$result = $this->db->query_fetch_single("SELECT "._CLMN_EMAIL_." FROM "._TBL_MI_." WHERE "._CLMN_EMAIL_." = ?", array($this->_email));
+		if(!is_array($result)) return;
+		return true;
+	}
+	
+	/**
+	 * getAccountData
+	 * returns the account data
+	 */
+	public function getAccountData() {
+		$this->_loadAccountData();
+		return $this->_accountData;
+	}
+	
+	/**
+	 * blockAccount
+	 * bans an account depending on the identificator set
+	 */
+	public function blockAccount() {
+		if(check_value($this->_userid)) {
+			$result = $this->db->query("UPDATE "._TBL_MI_." SET "._CLMN_BLOCCODE_." = ? WHERE "._CLMN_MEMBID_." = ?", array(1, $this->_userid));
+			if(!$result) return;
+			return true;
 		}
 		
-	}
-	
-	public function changePasswordVerificationProcess($user_id, $auth_code) {
-		if(!check_value($user_id)) throw new Exception(lang('error_24',true));
-		if(!check_value($auth_code)) throw new Exception(lang('error_24',true));
-		
-		$userid = Decode_id($user_id);
-		$authcode = Decode_id($auth_code);
-		
-		if(!Validator::UnsignedNumber($userid)) throw new Exception(lang('error_25',true));
-		if(!Validator::UnsignedNumber($authcode)) throw new Exception(lang('error_25',true));
-		
-		$result = $this->muonline->query_fetch_single("SELECT * FROM WEBENGINE_PASSCHANGE_REQUEST WHERE user_id = ?", array($userid));
-		if(!is_array($result)) throw new Exception(lang('error_25',true));
-		
-		# load changepw configs
-		$mypassCfg = loadConfigurations('usercp.mypassword');
-		$request_timeout = $mypassCfg['change_password_request_timeout'] * 3600;
-		$request_date = $result['request_date'] + $request_timeout;
-		
-		# check request data
-		if($request_date < time()) throw new Exception(lang('error_26',true));
-		if($result['auth_code'] != $authcode) throw new Exception(lang('error_27',true));
-		
-		# account data
-		$accountData = $this->accountInformation($userid);
-		$username = $accountData[_CLMN_USERNM_];
-		$new_password = Decode($result['new_password']);
-		
-		# check online status
-		if($this->accountOnline($username)) throw new Exception(lang('error_14',true));
-		
-		# update password
-		if(!$this->changePassword($userid, $username, $new_password)) throw new Exception(lang('error_29',true));
-		
-		# send email
-		try {
-			$email = new Email();
-			$email->setTemplate('CHANGE_PASSWORD');
-			$email->addVariable('{USERNAME}', $username);
-			$email->addVariable('{NEW_PASSWORD}', $new_password);
-			$email->addAddress($accountData[_CLMN_EMAIL_]);
-			$email->send();
-		} catch (Exception $ex) {}
-		
-		# clear password change request
-		$this->removePasswordChangeRequest($userid);
-		
-		# success message
-		message('success', lang('success_5',true));
-		
-	}
-	
-	public function passwordRecoveryProcess($user_email, $ip_address) {
-		if(!check_value($user_email)) throw new Exception(lang('error_30',true));
-		if(!check_value($ip_address)) throw new Exception(lang('error_30',true));
-		if(!Validator::Email($user_email)) throw new Exception(lang('error_30',true));
-		if(!Validator::Ip($ip_address)) throw new Exception(lang('error_30',true));
-		
-		if(!$this->emailExists($user_email)) throw new Exception(lang('error_30',true));
-		
-		$user_id = $this->retrieveUserIDbyEmail($user_email);
-		if(!check_value($user_id)) throw new Exception(lang('error_23',true));
-		
-		$accountData = $this->accountInformation($user_id);
-		if(!is_array($accountData)) throw new Exception(lang('error_23',true));
-		
-		# Account Recovery Code
-		$arc = $this->generateAccountRecoveryCode($accountData[_CLMN_MEMBID_], $accountData[_CLMN_USERNM_]);
-
-		# Account Recovery URL
-		$aru = $this->generateAccountRecoveryLink($accountData[_CLMN_MEMBID_], $accountData[_CLMN_EMAIL_], $arc);
-		
-		# send email
-		try {
-			$email = new Email();
-			$email->setTemplate('PASSWORD_RECOVERY_REQUEST');
-			$email->addVariable('{USERNAME}', $accountData[_CLMN_USERNM_]);
-			$email->addVariable('{DATE}', date("Y-m-d @ h:i a"));
-			$email->addVariable('{IP_ADDRESS}', $ip_address);
-			$email->addVariable('{LINK}', $aru);
-			$email->addAddress($accountData[_CLMN_EMAIL_]);
-			$email->send();
-			
-			message('success', lang('success_6',true));
-		} catch (Exception $ex) {
-			throw new Exception(lang('error_23',true));
-		}
-	}
-	
-	public function passwordRecoveryVerificationProcess($ui, $ue, $key) {
-		if(!check_value($ui)) throw new Exception(lang('error_31',true));
-		if(!check_value($ue)) throw new Exception(lang('error_31',true));
-		if(!check_value($key)) throw new Exception(lang('error_31',true));
-		
-		$user_id = Decode($ui); // decoded user id
-		if(!Validator::UnsignedNumber($user_id)) throw new Exception(lang('error_31',true));
-		
-		$user_email = Decode($ue); // decoded email address
-		if(!$this->emailExists($user_email)) throw new Exception(lang('error_31',true));
-		
-		$accountData = $this->accountInformation($user_id);
-		if(!is_array($accountData)) throw new Exception(lang('error_31',true));
-		
-		$username = $accountData[_CLMN_USERNM_];
-		$gen_key = $this->generateAccountRecoveryCode($user_id, $username);
-		
-		# compare keys
-		if($key != $gen_key) throw new Exception(lang('error_31',true));
-		
-		# update user password
-		$new_password = rand(11111111,99999999);
-		$update_pass = $this->changePassword($user_id, $username, $new_password);
-		if(!$update_pass) throw new Exception(lang('error_23',true));
-
-		try {
-			$email = new Email();
-			$email->setTemplate('PASSWORD_RECOVERY_COMPLETED');
-			$email->addVariable('{USERNAME}', $username);
-			$email->addVariable('{NEW_PASSWORD}', $new_password);
-			$email->addAddress($accountData[_CLMN_EMAIL_]);
-			$email->send();
-			
-			message('success', lang('success_7',true));
-		} catch (Exception $ex) {
-			throw new Exception(lang('error_23',true));
-		}
-	}
-	
-	public function masterKeyRecoveryProcess($user_id) {
-		if(!check_value($user_id)) throw new Exception(lang('error_23',true));
-		if(check_value($_COOKIE['webengine_masterkey'])) throw new Exception(lang('error_50',true));
-		
-		$accountData = $this->accountInformation($user_id);
-		if(!check_value($accountData[_CLMN_MASTER_KEY_])) throw new Exception(lang('error_49',true));
-		
-		if($this->accountOnline($accountData[_CLMN_USERNM_])) throw new Exception(lang('error_14',true));
-		
-		try {
-			$email = new Email();
-			$email->setTemplate('MASTER_KEY_RECOVERY');
-			$email->addVariable('{USERNAME}', $accountData[_CLMN_USERNM_]);
-			$email->addVariable('{CURRENT_MASTERKEY}', $accountData[_CLMN_MASTER_KEY_]);
-			$email->addAddress($accountData[_CLMN_EMAIL_]);
-			$email->send();
-			
-			message('success', lang('success_16',true));
-			setcookie("webengine_masterkey", $accountData[_CLMN_USERNM_], time()+3600);  /* expire in 1 hour */
-		} catch (Exception $ex) {
-			throw new Exception(lang('error_23',true));
-		}
-	}
-	
-	public function changeEmailAddress($accountId, $newEmail, $ipAddress) {
-		if(!check_value($accountId)) throw new Exception(lang('error_21',true));
-		if(!check_value($newEmail)) throw new Exception(lang('error_21',true));
-		if(!check_value($ipAddress)) throw new Exception(lang('error_21',true));
-		if(!Validator::Ip($ipAddress)) throw new Exception(lang('error_21',true));
-		if(!Validator::Email($newEmail)) throw new Exception(lang('error_21',true));
-		
-		# check if email already in use
-		if($this->emailExists($newEmail)) throw new Exception(lang('error_11',true));
-		
-		# account info
-		$accountInfo = $this->accountInformation($accountId);
-		if(!is_array($accountInfo)) throw new Exception(lang('error_21',true));
-		
-		$myemailCfg = loadConfigurations('usercp.myemail');
-		if($myemailCfg['require_verification']) {
-			# requires verification
-			$userName = $accountInfo[_CLMN_USERNM_];
-			$userEmail = $accountInfo[_CLMN_EMAIL_];
-			$requestDate = strtotime(date("m/d/Y 23:59"));
-			$key = md5(md5($userName).md5($userEmail).md5($requestDate).md5($newEmail));
-			$verificationLink = __BASE_URL__.'verifyemail/?op='.Encode_id(3).'&uid='.Encode_id($accountId).'&email='.$newEmail.'&key='.$key;
-			
-			# send verification email
-			$sendEmail = $this->changeEmailVerificationMail($userName, $userEmail, $newEmail, $verificationLink, $ipAddress);
-			if(!$sendEmail) throw new Exception(lang('error_21',true));
-		} else {
-			# no verification required
-			if(!$this->updateEmail($accountId, $newEmail)) throw new Exception(lang('error_21',true));
-		}
-	}
-	
-	public function changeEmailVerificationProcess($encodedId, $newEmail, $encryptedKey) {
-		$userId = Decode_id($encodedId);
-		if(!Validator::UnsignedNumber($userId)) throw new Exception(lang('error_21',true));
-		if(!Validator::Email($newEmail)) throw new Exception(lang('error_21',true));
-		
-		# check if email already in use
-		if($this->emailExists($newEmail)) throw new Exception(lang('error_11',true));
-		
-		# account info
-		$accountInfo = $this->accountInformation($userId);
-		if(!is_array($accountInfo)) throw new Exception(lang('error_21',true));
-		
-		# check key
-		$requestDate = strtotime(date("m/d/Y 23:59"));
-		$key = md5(md5($accountInfo[_CLMN_USERNM_]).md5($accountInfo[_CLMN_EMAIL_]).md5($requestDate).md5($newEmail));
-		if($key != $encryptedKey) throw new Exception(lang('error_21',true));
-		
-		# change email
-		if(!$this->updateEmail($userId, $newEmail)) throw new Exception(lang('error_21',true));
-	}
-	
-	public function verifyRegistrationProcess($username, $key) {
-		$verifyKey = $this->muonline->query_fetch_single("SELECT * FROM WEBENGINE_REGISTER_ACCOUNT WHERE registration_account = ? AND registration_key = ?", array($username,$key));
-		if(!is_array($verifyKey)) throw new Exception(lang('error_25',true));
-		
-		# load registration configs
-		$regCfg = loadConfigurations('register');
-		
-		# insert data
-		$data = array(
-			'username' => $verifyKey['registration_account'],
-			'password' => Decode($verifyKey['registration_password']),
-			'name' => 'webengine',
-			'serial' => '111111111111',
-			'email' => $verifyKey['registration_email']
-		);
-		
-		# query
-		if($this->_md5Enabled) {
-			$query = "INSERT INTO "._TBL_MI_." ("._CLMN_USERNM_.", "._CLMN_PASSWD_.", "._CLMN_MEMBNAME_.", "._CLMN_SNONUMBER_.", "._CLMN_EMAIL_.", "._CLMN_BLOCCODE_.", "._CLMN_CTLCODE_.") VALUES (:username, [dbo].[fn_md5](:password, :username), :name, :serial, :email, 0, 0)";
-		} else {
-			$query = "INSERT INTO "._TBL_MI_." ("._CLMN_USERNM_.", "._CLMN_PASSWD_.", "._CLMN_MEMBNAME_.", "._CLMN_SNONUMBER_.", "._CLMN_EMAIL_.", "._CLMN_BLOCCODE_.", "._CLMN_CTLCODE_.") VALUES (:username, :password, :name, :serial, :email, 0, 0)";
+		if(check_value($this->_username)) {
+			$result = $this->db->query("UPDATE "._TBL_MI_." SET "._CLMN_BLOCCODE_." = ? WHERE "._CLMN_USERNM_." = ?", array(1, $this->_username));
+			if(!$result) return;
+			return true;
 		}
 		
-		# create account
-		$result = $this->db->query($query, $data);
-		if(!$result) throw new Exception(lang('error_22',true));
-		
-		# delete verification request
-		$this->deleteRegistrationVerification($username);
-		
-		# send welcome email
-		if($regCfg['send_welcome_email']) {
-			$this->sendWelcomeEmail($verifyKey['registration_account'],$verifyKey['registration_email']);
+		if(check_value($this->_email)) {
+			$result = $this->db->query("UPDATE "._TBL_MI_." SET "._CLMN_BLOCCODE_." = ? WHERE "._CLMN_EMAIL_." = ?", array(1, $this->_email));
+			if(!$result) return;
+			return true;
 		}
 		
-		# free vip days
-		if($regCfg['freevip_enable']) {
-			switch($this->_serverFiles) {
-				case 'MUE':
-					$vip = new Vip();
-					$this->updateVipTimeStamp($this->db->db->lastInsertId(), $vip->CalculateTimestamp($regCfg['freevip_days']));
-					break;
-				default:
-					break;
-			}
-		}
-		
-		# success message
-		message('success', lang('success_1',true));
-		
-		# redirect to login (5 seconds)
-		redirect(2,'login/',5);
-	}
-	
-	private function sendRegistrationVerificationEmail($username, $account_email, $key) {
-		$verificationLink = __BASE_URL__.'verifyemail/?op='.Encode_id(2).'&user='.Encode($username).'&key='.$key;
-		try {
-			$email = new Email();
-			$email->setTemplate('WELCOME_EMAIL_VERIFICATION');
-			$email->addVariable('{USERNAME}', $username);
-			$email->addVariable('{LINK}', $verificationLink);
-			$email->addAddress($account_email);
-			$email->send();
-		} catch (Exception $ex) {}
-	}
-	
-	private function sendWelcomeEmail($username,$address) {
-		try {
-			$email = new Email();
-			$email->setTemplate('WELCOME_EMAIL');
-			$email->addVariable('{USERNAME}', $username);
-			$email->addAddress($address);
-			$email->send();
-		} catch (Exception $ex) {
-			// do nuthin u.u
-		}
-	}
-	
-	private function createRegistrationVerification($username,$password,$email) {
-		if(!check_value($username)) return;
-		if(!check_value($password)) return;
-		if(!check_value($email)) return;
-		
-		$key = uniqid();
-		$data = array(
-			$username,
-			Encode($password),
-			$email,
-			time(),
-			$_SERVER['REMOTE_ADDR'],
-			$key
-		);
-		
-		$query = "INSERT INTO WEBENGINE_REGISTER_ACCOUNT (registration_account,registration_password,registration_email,registration_date,registration_ip,registration_key) VALUES (?,?,?,?,?,?)";
-		
-		$result = $this->muonline->query($query, $data);
-		if(!$result) return;
-		return $key;
-	}
-	
-	private function deleteRegistrationVerification($username) {
-		if(!check_value($username)) return;
-		$delete = $this->muonline->query("DELETE FROM WEBENGINE_REGISTER_ACCOUNT WHERE registration_account = ?", array($username));
-		if($delete) return true;
 		return;
 	}
-
-	private function checkUsernameEVS($username) {
-		if(!check_value($username)) return;
-		$result = $this->muonline->query_fetch_single("SELECT * FROM WEBENGINE_REGISTER_ACCOUNT WHERE registration_account = ?", array($username));
+	
+	/**
+	 * isOnline
+	 * checks if the account is online
+	 */
+	public function isOnline() {
+		if(check_value($this->_username)) {
+			$result = $this->db->query_fetch_single("SELECT "._CLMN_CONNSTAT_." FROM "._TBL_MS_." WHERE "._CLMN_USERNM_." = ? AND "._CLMN_CONNSTAT_." = ?", array($this->_username, 1));
+			if(!is_array($result)) return;
+			return true;
+		}
 		
-		$configs = loadConfigurations('register');
-		if(!is_array($configs)) return;
+		$accountData = $this->getAccountData();
+		if(is_array($accountData)) {
+			$result = $this->db->query_fetch_single("SELECT "._CLMN_CONNSTAT_." FROM "._TBL_MS_." WHERE "._CLMN_USERNM_." = ? AND "._CLMN_CONNSTAT_." = ?", array($accountData[_CLMN_USERNM_], 1));
+			if(!is_array($result)) return;
+			return true;
+		}
 		
-		$timelimit = $result['registration_date']+$configs['verification_timelimit']*60*60;
-		if($timelimit > time()) return true;
-		
-		$this->deleteRegistrationVerification($username);
-		return false;
-	}
-
-	private function checkEmailEVS($email) {
-		if(!check_value($email)) return;
-		$result = $this->muonline->query_fetch_single("SELECT * FROM WEBENGINE_REGISTER_ACCOUNT WHERE registration_email = ?", array($email));
-		
-		$configs = loadConfigurations('register');
-		if(!is_array($configs)) return;
-		
-		$timelimit = $result['registration_date']+$configs['verification_timelimit']*60*60;
-		if($timelimit > time()) return true;
-		
-		$this->deleteRegistrationVerification($result['registration_account']);
-		return false;
+		return;
 	}
 	
-	private function changeEmailVerificationMail($userName, $emailAddress, $newEmail, $verificationLink, $ipAddress) {
-		try {
-			$email = new Email();
-			$email->setTemplate('CHANGE_EMAIL_VERIFICATION');
-			$email->addVariable('{USERNAME}', $userName);
-			$email->addVariable('{IP_ADDRESS}', $ipAddress);
-			$email->addVariable('{NEW_EMAIL}', $newEmail);
-			$email->addVariable('{LINK}', $verificationLink);
-			$email->addAddress($emailAddress);
-			$email->send();
-			
-			return true;
-		} catch (Exception $ex) {
+	/**
+	 * _loadAccountData
+	 * loads the account data depending on the identificator set
+	 */
+	protected function _loadAccountData() {
+		if(check_value($this->_userid)) {
+			$result = $this->db->query_fetch_single("SELECT * FROM "._TBL_MI_." WHERE "._CLMN_MEMBID_." = ?", array($this->_userid));
+			if(!is_array($result)) return;
+			$this->_accountData = $result;
 			return;
 		}
+		
+		if(check_value($this->_username)) {
+			$result = $this->db->query_fetch_single("SELECT * FROM "._TBL_MI_." WHERE "._CLMN_USERNM_." = ?", array($this->_username));
+			if(!is_array($result)) return;
+			$this->_accountData = $result;
+			return;
+		}
+		
+		if(check_value($this->_email)) {
+			$result = $this->db->query_fetch_single("SELECT * FROM "._TBL_MI_." WHERE "._CLMN_EMAIL_." = ?", array($this->_email));
+			if(!is_array($result)) return;
+			$this->_accountData = $result;
+			return;
+		}
+		
+		return;
 	}
 	
-	private function generateAccountRecoveryLink($userid,$email,$recovery_code) {
-		if(!check_value($userid)) return;
-		if(!check_value($recovery_code)) return;
+	/**
+	 * _createAccount
+	 * creates a new account in the database
+	 */
+	protected function _createAccount() {
+		if(!check_value($this->_username)) return;
+		if(!check_value($this->_password)) return;
+		if(!check_value($this->_email)) return;
 		
-		$build_url = __BASE_URL__;
-		$build_url .= 'forgotpassword/';
-		$build_url .= '?ui=';
-		$build_url .= Encode($userid);
-		$build_url .= '&ue=';
-		$build_url .= Encode($email);
-		$build_url .= '&key=';
-		$build_url .= $recovery_code;
-		return $build_url;
+		$data = array(
+			'username' => $this->_username,
+			'password' => $this->_password,
+			'name' => $this->_username,
+			'serial' => $this->_serial,
+			'email' => $this->_email
+		);
+		
+		if($this->_md5Enabled) {
+			$query = "INSERT INTO "._TBL_MI_." ("._CLMN_USERNM_.", "._CLMN_PASSWD_.", "._CLMN_MEMBNAME_.", "._CLMN_SNONUMBER_.", "._CLMN_EMAIL_.", "._CLMN_BLOCCODE_.", "._CLMN_CTLCODE_.") VALUES (:username, [dbo].[fn_md5](:password, :username), :name, :serial, :email, 0, 0)";
+		} else {
+			$query = "INSERT INTO "._TBL_MI_." ("._CLMN_USERNM_.", "._CLMN_PASSWD_.", "._CLMN_MEMBNAME_.", "._CLMN_SNONUMBER_.", "._CLMN_EMAIL_.", "._CLMN_BLOCCODE_.", "._CLMN_CTLCODE_.") VALUES (:username, :password, :name, :serial, :email, 0, 0)";
+		}
+		
+		$result = $this->db->query($query, $data);
+		if(!$result) return;
+		
+		return true;
+	}
+	
+	/**
+	 * _validateAccount
+	 * checks if the username and password are correct
+	 */
+	protected function _validateAccount() {
+		if(!check_value($this->_username)) return;
+		if(!check_value($this->_password)) return;
+		$data = array(
+			'username' => $this->_username,
+			'password' => $this->_password
+		);
+		if($this->_md5Enabled) {
+			$query = "SELECT * FROM "._TBL_MI_." WHERE "._CLMN_USERNM_." = :username AND "._CLMN_PASSWD_." = [dbo].[fn_md5](:password, :username)";
+		} else {
+			$query = "SELECT * FROM "._TBL_MI_." WHERE "._CLMN_USERNM_." = :username AND "._CLMN_PASSWD_." = :password";
+		}
+		
+		$result = $this->db->query_fetch_single($query, $data);
+		if(!is_array($result)) return;
+		
+		return true;
+	}
+	
+	/**
+	 * _generateVerificationKey
+	 * generates a 6-digit random number
+	 */
+	protected function _generateVerificationKey() {
+		return mt_rand(111111,999999);
+	}
+	
+	/**
+	 * _updatePassword
+	 * changes the account password
+	 */
+	protected function _updatePassword() {
+		if(!check_value($this->_userid)) return;
+		if(!check_value($this->_username)) return;
+		if(!check_value($this->_newPassword)) return;
+		if($this->_md5Enabled) {
+			$data = array(
+				'userid' => $this->_userid,
+				'username' => $this->_username,
+				'newpassword' => $this->_newPassword
+			);
+			$query = "UPDATE "._TBL_MI_." SET "._CLMN_PASSWD_." = [dbo].[fn_md5](:newpassword, :username) WHERE "._CLMN_MEMBID_." = :userid";
+		} else {
+			$data = array(
+				'userid' => $this->_userid,
+				'newpassword' => $this->_newPassword
+			);
+			$query = "UPDATE "._TBL_MI_." SET "._CLMN_PASSWD_." = :newpassword WHERE "._CLMN_MEMBID_." = :userid";
+		}
+		
+		$result = $this->db->query($query, $data);
+		if(!$result) return;
+		
+		return true;
 	}
 	
 }

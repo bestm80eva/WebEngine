@@ -1,210 +1,157 @@
 <?php
-/**
- * WebEngine
- * http://muengine.net/
- * 
- * @version 1.0.9
- * @author Lautaro Angelico <http://lautaroangelico.com/>
- * @copyright (c) 2013-2017 Lautaro Angelico, All Rights Reserved
- * 
- * Licensed under the MIT license
- * http://opensource.org/licenses/MIT
- */
-
 class Handler {
 	
-	private $_disableWebEngineFooterVersion = false;
-	private $_disableWebEngineFooterCredits = false;
+	private static $muonline;
+	private static $memuonline;
+	private static $defaultModule = 'home';
 	
-	private $_dB;
-	private $_dB2;
+	private static $regexPattern = '/[^a-zA-Z0-9\/]/';
 	
-	function __construct(dB $dB, dB $dB2 = null) {
-		$this->_dB = $dB;
-		$this->_dB2 = (check_value($dB2) ? $dB2 : null);
-	}
-	
-	public function loadPage() {
-		global $config,$lang,$custom,$common,$tSettings;
-		
-		# object instances
-		$handler = $this;
-		$dB = $this->_dB;
-		$dB2 = $this->_dB2;
-		
-		# load language
-		$loadLanguage = (check_value($_SESSION['language_display']) ? $_SESSION['language_display'] : $config['language_default']);
-		$loadLanguage = (config('language_switch_active',true) ? $loadLanguage : $config['language_default']);
-		if(!$this->languageExists($loadLanguage)) throw new Exception('The chosen language cannot be loaded ('.$loadLanguage.').');
-		include(__PATH_LANGUAGES__ . $loadLanguage . '/language.php');
-		
-		# access
-		if(!defined('access') or !access) {
-			// blank for APIs
-		} else {
-			# check if template exists
-			if(!$this->templateExists($config['website_template'])) throw new Exception('The chosen template cannot be loaded ('.$config['website_template'].').');
-			
-			# load template
-			include(__PATH_TEMPLATES__ . $config['website_template'] . '/index.php');
-			
-			# show admincp button
-			if(isLoggedIn() && canAccessAdminCP($_SESSION['username'])) {
-				echo '<a href="'.__PATH_ADMINCP_HOME__.'" class="btn btn-primary admincp-button">AdminCP</a>';
+	public static function loadTemplate() {
+		global $lang;
+		try {
+			if(defined('access') or access) {
+				if(access == "index") {
+					include(__PATH_LANGUAGES__ . config('language_default', true) . '/language.php');
+					self::loadTemplateIndex();
+				} elseif(access == "cron") {
+					// do not load anything (for crons)
+				} else {
+					throw new Exception("No Access");
+				}
 			}
-			
-			if(!$this->_disableWebEngineFooterCredits) if(!$this->isPowered) redirect(3, 'http://muengine.net/credits.html');
+		} catch(Exception $ex) {
+			die('[ERROR] '.$ex->getMessage());
 		}
 	}
-
-	public function loadModule($page = 'news',$subpage = 'home') {
-		global $config,$lang,$custom,$common,$mconfig,$tSettings;
+	
+	public static function loadModule($request='') {
+		$dB = self::loadDB();
 		
-		$handler = $this;
-		$dB = $this->_dB;
-		$dB2 = $this->_dB2;
+		$request = explode("/", $request);
+		$request = array_filter($request);
 		
-		$page = $this->cleanRequest($page);
-		$subpage = $this->cleanRequest($subpage);
+		$_GET['module'] = (@check($request[0]) ? $request[0] : NULL);
+		$_GET['submodule'] = '';
 		
-		$request = explode("/", $_GET['request']);
-		if(is_array($request)) {
-			for($i = 0; $i < count($request); $i++) {
-				if(check_value($request[$i])) {
-					if(check_value($request[$i+1])) {
-						$_GET[$request[$i]] = filter_var($request[$i+1], FILTER_SANITIZE_STRING);
+		if(count($request) > 1) {
+			// Sub-Modules
+			foreach($request as $reqKey => $thisReq) {
+				if($reqKey != 0) {
+					$parentModule = $request[$reqKey-1];
+					$subModuleData = $dB->query_fetch_single("SELECT * FROM WEBENGINE_MODULES WHERE module_file = ? AND module_parent = ? AND module_status = 1", array($thisReq, $parentModule));
+					if($subModuleData) {
+						if($subModuleData['access'] == 2) {
+							# check if logged in
+							if(!isLoggedIn()) redirect('login/');
+						}
+						if(check($_GET['submodule'])) $_GET['submodule'] .= "/";
+						$_GET['submodule'] .= $thisReq;
+					} else {
+						$parentModuleData = $dB->query_fetch_single("SELECT * FROM WEBENGINE_MODULES WHERE module_file = ? AND module_parent IS NULL AND module_status = 1", array($parentModule));
+						if($parentModuleData['access'] == 2) {
+							# check if logged in
+							if(!isLoggedIn()) redirect('login/');
+						}
+						//$_GET['module'] = "404";
+						//$_GET['submodule'] = "";
+					}
+				}
+			}
+			
+			for($i = count(explode("/", $_GET['submodule']))+1; $i < count($request); $i++) {
+				if(@check($request[$i])) {
+					if(@check($request[$i+1])) {
+						//$_GET[$request[$i]] = filter_var($request[$i+1], FILTER_SANITIZE_STRING);
+						//$_GET[$request[$i]] = $request[$i+1];
+						$_GET[$request[$i]] = self::cleanModuleRequest($request[$i+1]);
 					} else {
 						$_GET[$request[$i]] = NULL;
 					}
 				}
 				$i++;
 			}
-		}
-		
-		if(!check_value($page)) { $page = 'news'; }
-		
-		if(!check_value($subpage)) {
-			if($this->moduleExists($page)) {
-				@loadModuleConfigs($page);
-				include(__PATH_MODULES__ . $page . '.php');
-			} else {
-				$this->module404();
-			}
+			
 		} else {
-			// HANDLE PAGE AS DIRECTORY (PATH)
-			switch($page) {
-				case 'news':
-					if($this->moduleExists($page)) {
-						@loadModuleConfigs($page);
-						include(__PATH_MODULES__ . $page . '.php');
-					} else {
-						$this->module404();
-					}
-				break;
-				default:
-					$path = $page.'/'.$subpage;
-					if($this->moduleExists($path)) {
-						$cnf = $page.'.'.$subpage;
-						@loadModuleConfigs($cnf);
-						include(__PATH_MODULES__ . $path . '.php');
-					} else {
-						$this->module404();
-					}
-				break;
-			}
-		}
-	
-	}
-	
-	private function moduleExists($page) {
-		if(file_exists(__PATH_MODULES__ . $page . '.php')) return true;
-		return false;
-	}
-	
-	private function usercpmoduleExists($page) {
-		if(file_exists(__PATH_MODULES_USERCP__ . $page . '.php')) return true;
-		return false;
-	}
-	
-	private function templateExists($template) {
-		if(file_exists(__PATH_TEMPLATES__ . $template . '/index.php')) return true;
-		return false;
-	}
-	
-	private function languageExists($language) {
-		if(file_exists(__PATH_LANGUAGES__ . $language . '/language.php')) return true;
-		return false;
-	}
-	
-	private function admincpmoduleExists($page) {
-		if(file_exists(__PATH_ADMINCP_MODULES__ . $page . '.php')) return true;
-		return false;
-	}
-	
-	public function webenginePowered() {
-		$this->isPowered = true;
-		if($this->_disableWebEngineFooterCredits) return;
-		
-		echo '<div style="padding:10px;text-transform:uppercase;font-size:11px;">';
-			echo '<a href="http://muengine.net/" target="_blank" style="color:#ff0000;">';
-				echo 'Powered by WebEngine';
-				if(!$this->_disableWebEngineFooterVersion) echo ' ' . __WEBENGINE_VERSION__;
-			echo '</a>';
-		echo '</div>';
-	}
-	
-	public function loadAdminCPModule($module='home') {
-		global $config,$lang,$custom,$common,$handler,$mconfig,$gconfig;
-		
-		$dB = $this->_dB;
-		$dB2 = $this->_dB2;
-		
-		$module = (check_value($module) ? $module : 'home');
-		
-		if($this->admincpmoduleExists($module)) {
-			
-			// admin access level
-			$adminAccessLevel = config('admins',true);
-			$accessLevel = $adminAccessLevel[$_SESSION['username']];
-			
-			// module access level
-			$modulesAccessLevel = config('admincp_modules_access',true);
-			if(is_array($modulesAccessLevel)) {
-				if(array_key_exists($module, $modulesAccessLevel)) {
-					if($accessLevel >= $modulesAccessLevel[$module]) {
-						include(__PATH_ADMINCP_MODULES__.$module.'.php');
-					} else {
-						message('error','You do not have access to this module.');
-					}
-				} else {
-					include(__PATH_ADMINCP_MODULES__.$module.'.php');
+			// Top Module
+			$topModuleData = $dB->query_fetch_single("SELECT * FROM WEBENGINE_MODULES WHERE module_file = ? AND module_parent IS NULL AND module_status = 1", array($_GET['module']));
+			if(check($_GET['module']) && !$topModuleData) {
+				$_GET['module'] = "404";
+			} else {
+				if($topModuleData['access'] == 2) {
+					# check if logged in
+					if(!isLoggedIn()) redirect('login/');
 				}
 			}
+		}
+		
+		
+		$module = (check(self::cleanModuleRequest($_GET['module'])) ? self::cleanModuleRequest($_GET['module']) : 'home');
+		$submodule = self::cleanModuleRequest($_GET['submodule']);
+		
+		# SESSION
+		sessionControl::lastUserLocation($module.'/'.$submodule);
+		if(!isLoggedIn()) {
+			sessionControl::initSessionControl($db);
 		} else {
-			message('error','INVALID MODULE');
+			sessionControl::initSessionControl($db, "user");
+		}
+		
+		// Modules Path
+		$modulesPath = __PATH_MODULES__;
+		
+		if(check($submodule)) {
+			$path = $modulesPath.$module.'/'.$submodule.'.php';
+			if(file_exists($path)) {
+				self::loadPage($path);
+			} else {
+				self::loadPage($modulesPath.'404.php');
+			}
+		} else {
+			if(file_exists($modulesPath.$module.'.php')) {
+				self::loadPage($modulesPath.$module.'.php');
+			} else {
+				self::loadPage($modulesPath.'404.php');
+			}
 		}
 	}
 	
-	public function websiteTitle() {
-		$websiteTitle = (check_value(lang('website_title',true)) && lang('website_title',true) != 'ERROR' ? lang('website_title',true) : config('website_title',true));
-		echo $websiteTitle;
+	private static function loadPage($path) {
+		include($path);
 	}
 	
-	private function cleanRequest($string) {
-		return preg_replace("/[^a-zA-Z0-9\s\/]/", "", $string);
+	private static function moduleExists($request) {
+		if(file_exists(__PATH_MODULES__ . $request . '.php')) return true;
+		return;
 	}
 	
-	private function module404() {
-		redirect();
+	private static function loadTemplateIndex() {
+		if(file_exists(__PATH_TEMPLATE_ROOT__.'/index.php')) {
+			include(__PATH_TEMPLATE_ROOT__.'/index.php');
+		} else {
+			throw new Exception('Could not load template.');
+		}
 	}
 	
-	public function switchLanguage($language) {
-		if(!check_value($language)) return;
-		if(!$this->languageExists($language)) return;
-		
-		# set session variable
-		$_SESSION['language_display'] = $language;
-		
-		return true;
+	private static function cleanModuleRequest($input) {
+		return preg_replace(self::$regexPattern, '', $input);
+	}
+	
+	public static function loadDB($database="") {
+		switch($database) {
+			case 'Me_MuOnline':
+				
+				break;
+			default:
+				$dbc = new dB(config('SQL_DB_HOST',true), config('SQL_DB_PORT', true), config('SQL_DB_NAME', true), config('SQL_DB_USER', true), config('SQL_DB_PASS', true), config('SQL_PDO_DRIVER', true));
+				return $dbc;
+		}
+	}
+	
+	public static function userIP() {
+		$ip = filter_input(INPUT_SERVER, "REMOTE_ADDR", FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE);
+		//$ip = $_SERVER['REMOTE_ADDR'];
+		if(!$ip) return "0.0.0.0";
+		return $ip;
 	}
 }

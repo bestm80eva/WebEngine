@@ -3,7 +3,7 @@
  * WebEngine
  * http://muengine.net/
  * 
- * @version 1.0.9.5
+ * @version 2.0.0
  * @author Lautaro Angelico <http://lautaroangelico.com/>
  * @copyright (c) 2013-2017 Lautaro Angelico, All Rights Reserved
  * 
@@ -17,13 +17,14 @@ session_start();
 ob_start();
 
 # ArcticEngine Version
-define('__WEBENGINE_VERSION__', '1.0.9.5');
+define('__WEBENGINE_VERSION__', '2.0.0');
 
 # Set Encoding
 @ini_set('default_charset', 'utf-8');
 
 # Server Time
 //date_default_timezone_set('America/Los_Angeles');
+date_default_timezone_set('America/Chicago');
 
 # Global Paths
 define('HTTP_HOST', $_SERVER['HTTP_HOST']);
@@ -57,10 +58,8 @@ define('__PATH_ADMINCP_HOME__', __BASE_URL__.'admincp/');
 
 # Load Libraries
 if(!@include_once(__PATH_CLASSES__ . 'class.database.php')) throw new Exception('Could not load class (database).');
-if(!@include_once(__PATH_CLASSES__ . 'class.common.php')) throw new Exception('Could not load class (common).');
 if(!@include_once(__PATH_CLASSES__ . 'class.handler.php')) throw new Exception('Could not load class (handler).');
 if(!@include_once(__PATH_CLASSES__ . 'class.validator.php')) throw new Exception('Could not load class (validator).');
-if(!@include_once(__PATH_CLASSES__ . 'class.login.php')) throw new Exception('Could not load class (login).');
 if(!@include_once(__PATH_CLASSES__ . 'class.vote.php')) throw new Exception('Could not load class (vote).');
 if(!@include_once(__PATH_CLASSES__ . 'class.character.php')) throw new Exception('Could not load class (character).');
 if(!@include_once(__PATH_CLASSES__ . 'phpmailer/PHPMailerAutoload.php')) throw new Exception('Could not load class (phpmailer).');
@@ -70,7 +69,13 @@ if(!@include_once(__PATH_CLASSES__ . 'class.plugins.php')) throw new Exception('
 if(!@include_once(__PATH_CLASSES__ . 'class.profiles.php')) throw new Exception('Could not load class (profiles).');
 if(!@include_once(__PATH_CLASSES__ . 'class.credits.php')) throw new Exception('Could not load class (credits).');
 if(!@include_once(__PATH_CLASSES__ . 'class.email.php')) throw new Exception('Could not load class (email).');
-if(!@include_once(__PATH_CLASSES__ . 'class.account.php')) throw new Exception('Could not load class (email).');
+if(!@include_once(__PATH_CLASSES__ . 'class.account.php')) throw new Exception('Could not load class (account).');
+if(!@include_once(__PATH_CLASSES__ . 'class.account.login.php')) throw new Exception('Could not load class (account.login).');
+if(!@include_once(__PATH_CLASSES__ . 'class.account.register.php')) throw new Exception('Could not load class (account.register).');
+if(!@include_once(__PATH_CLASSES__ . 'class.account.password.php')) throw new Exception('Could not load class (account.password).');
+if(!@include_once(__PATH_CLASSES__ . 'class.account.email.php')) throw new Exception('Could not load class (account.email).');
+if(!@include_once(__PATH_CLASSES__ . 'class.common.php')) throw new Exception('Could not load class (common).');
+if(!@include_once(__PATH_CLASSES__ . 'class.session.php')) throw new Exception('Could not load class (session).');
 
 # Load Functions
 if(!@include_once(__PATH_INCLUDES__ . 'functions.php')) throw new Exception('Could not load functions.');
@@ -159,7 +164,7 @@ if($config['SQL_USE_2_DB']) {
 }
 
 # Common Library Instance
-$common = new common($dB, $dB2);
+$common = new common();
 
 # IP Blocking System
 if($config['ip_block_system_enable']) {
@@ -211,5 +216,6 @@ define('__PATH_TEMPLATE_JS__', __PATH_TEMPLATE__ . 'js/');
 define('__PATH_TEMPLATE_FONTS__', __PATH_TEMPLATE__ . 'fonts/');
 
 # Handler Instance
-$handler = new Handler($dB, $dB2);
-$handler->loadPage();
+//$handler = new Handler($dB, $dB2);
+//$handler->loadPage();
+Handler::loadTemplate();

@@ -3,7 +3,7 @@
  * WebEngine
  * http://muengine.net/
  * 
- * @version 1.0.9
+ * @version 2.0.0
  * @author Lautaro Angelico <http://lautaroangelico.com/>
  * @copyright (c) 2013-2017 Lautaro Angelico, All Rights Reserved
  * 
@@ -442,30 +442,21 @@ class CreditSystem {
 	 */
 	private function _isOnline($input) {
 		if(!$this->_identifier) throw new Exception("Identifier not set, cannot check online status.");
+		
+		$Account = new Account();
+		
 		switch($input) {
 			case 'userid':
-				// get account information using the id
-				$accountInfo = $this->common->accountInformation($this->_identifier);
-				if(!$accountInfo) throw new Exception("Could not retrieve account information.");
-				
-				// check online status
-				return $this->common->accountOnline($accountInfo[_CLMN_USERNM_]);
+				$Account->setUserid($this->_identifier);
+				return $Account->isOnline();
 				break;
 			case 'username':
-				// check online status
-				return $this->common->accountOnline($this->_identifier);
+				$Account->setUsername($this->_identifier);
+				return $Account->isOnline();
 				break;
 			case 'email':
-				// get the account id using the email
-				$userId = $this->common->retrieveUserIDbyEmail($this->_identifier);
-				if(!$userId) throw new Exception("Could not retrieve account information (email).");
-				
-				// get account information using the id
-				$accountInfo = $this->common->accountInformation($userId);
-				if(!$accountInfo) throw new Exception("Could not retrieve account information.");
-				
-				// check online status
-				return $this->common->accountOnline($accountInfo[_CLMN_USERNM_]);
+				$Account->setEmail($this->_identifier);
+				return $Account->isOnline();
 				break;
 			case 'character':
 				// get account username from character data
@@ -473,7 +464,8 @@ class CreditSystem {
 				if(!$characterData) throw new Exception("Could not retrieve account information (character).");
 				
 				// check online status
-				return $this->common->accountOnline($characterData[_CLMN_CHR_ACCID_]);
+				$Account->setUsername($characterData[_CLMN_CHR_ACCID_]);
+				return $Account->isOnline();
 				break;
 			default:
 				throw new Exception("Invalid identifier set, cannot check online status.");

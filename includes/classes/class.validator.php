@@ -3,7 +3,7 @@
  * WebEngine
  * http://muengine.net/
  * 
- * @version 1.0.9
+ * @version 2.0.0
  * @author Lautaro Angelico <http://lautaroangelico.com/>
  * @copyright (c) 2013-2017 Lautaro Angelico, All Rights Reserved
  * 
@@ -11,8 +11,15 @@
  * http://opensource.org/licenses/MIT
  */
 
-class Validator{
-
+class Validator {
+	
+	private static $_usernameAlphaNumCheck = true;
+	private static $_usernameMinLen = 4;
+	private static $_usernameMaxLen = 10;
+	private static $_passwordMinLen = 6;
+	private static $_passwordMaxLen = 32;
+	private static $_emailMaxLen = 50;
+	
 	private static function textHit($string, $exclude=""){
 		if(empty($exclude)) return false;
 		if(is_array($exclude)){
@@ -85,19 +92,49 @@ class Validator{
     }
 	
 	public static function UsernameLength($string){
-		if((strlen($string) < 4) || (strlen($string) > 10)) {
-			return false;
-		} else {
-			return true;
-		}
+		if(!self::Length($string, 10, 4)) return;
+		return true;
 	}
 	
 	public static function PasswordLength($string){
-		if((strlen($string) < 4) || (strlen($string) > 32)) {
-			return false;
-		} else {
-			return true;
-		}
+		if(!self::Length($string, 32, 4)) return;
+		return true;
+	}
+	
+	public static function AccountId($string) {
+		if(!self::Number($string)) return;
+		if(!self::UnsignedNumber($string)) return;
+		
+		return true;
+	}
+	
+	public static function AccountUsername($string) {
+		$usernameCheckAlphaNumeric = check_value(config('username_alphanumeric_check',true)) ? config('username_alphanumeric_check',true) : self::$_usernameAlphaNumCheck;
+		$usernameMinLen = check_value(config('username_min_length',true)) ? config('username_min_length',true) : self::$_usernameMinLen;
+		$usernameMaxLen = check_value(config('username_max_length',true)) ? config('username_max_length',true) : self::$_usernameMaxLen;
+		
+		if($usernameCheckAlphaNumeric) if(!self::AlphaNumeric($string)) return;
+		if(!self::Length($string, $usernameMaxLen, $usernameMinLen)) return;
+		
+		return true;
+	}
+	
+	public static function AccountPassword($string) {
+		$passwordMinLen = check_value(config('password_min_length',true)) ? config('password_min_length',true) : self::$_passwordMinLen;
+		$passwordMaxLen = check_value(config('password_max_length',true)) ? config('password_max_length',true) : self::$_passwordMaxLen;
+		
+		if(!self::Length($string, $passwordMaxLen, $passwordMinLen)) return;
+		
+		return true;
+	}
+	
+	public static function AccountEmail($string) {
+		$emailMaxLen = check_value(config('email_max_length',true)) ? config('email_max_length',true) : self::$_emailMaxLen;
+		
+		if(!self::Length($string, $emailMaxLen, 0)) return;
+		if(!self::Email($string)) return;
+		
+		return true;
 	}
     
 }
