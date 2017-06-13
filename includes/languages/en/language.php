@@ -3,7 +3,7 @@
  * WebEngine
  * http://muengine.net/
  * 
- * @version 1.0.9
+ * @version 2.0.0
  * @author Lautaro Angelico <http://lautaroangelico.com/>
  * @copyright (c) 2013-2017 Lautaro Angelico, All Rights Reserved
  * 
@@ -42,7 +42,7 @@ $lang['module_titles_txt_11'] = 'Donate for Credits';
 $lang['module_titles_txt_12'] = 'Reset Character';
 $lang['module_titles_txt_13'] = 'Clear PK';
 $lang['module_titles_txt_14'] = 'Frequently Asked Questions';
-$lang['module_titles_txt_15'] = 'Forgot Password';
+$lang['module_titles_txt_15'] = 'Password Recovery';
 $lang['module_titles_txt_16'] = 'Unstick Character';
 $lang['module_titles_txt_17'] = 'V.I.P. Subscription';
 $lang['module_titles_txt_18'] = 'Fix Stats';
@@ -103,7 +103,7 @@ $lang['error_3'] = 'You have reached the maximum number of login failures, there
 $lang['error_4'] = 'You must complete all the fields in the form.';
 $lang['error_5'] = 'The username length must be 4 to 10 characters.';
 $lang['error_6'] = 'The username can only contain alpha-numeric characters.';
-$lang['error_7'] = 'The password length can be 4 to 32 characters.';
+$lang['error_7'] = 'The password length can be 6 to 12 characters.';
 $lang['error_8'] = 'The passwords did not match.';
 $lang['error_9'] = 'The email address you entered it\'s not valid.';
 $lang['error_10'] = 'The username you entered already exists.';
@@ -122,8 +122,8 @@ $lang['error_22'] = 'We could not create your account, please contact the suppor
 $lang['error_23'] = 'There has been an unexpected error, please contact the support team.';
 $lang['error_24'] = 'The information provided in your request is not valid.';
 $lang['error_25'] = 'Your request could not be completed, please try again.';
-$lang['error_26'] = 'Your password change request expired, please request a new one.';
-$lang['error_27'] = 'The authorization code provided is not valid.';
+$lang['error_26'] = 'Your password change request has expired, please request a new one.';
+$lang['error_27'] = 'The provided verification key is not valid.';
 $lang['error_28'] = 'Your account is online, please disconnect.';
 $lang['error_29'] = 'Your password could not be changed, please contact the support team.';
 $lang['error_30'] = 'No accounts found with the provided email address.';
@@ -160,6 +160,8 @@ $lang['error_60'] = 'The VIP package you selected is not available.';
 $lang['error_61'] = 'You currently have an active VIP subscription, please extend.';
 $lang['error_62'] = 'You don\'t have an active VIP subscription to extend.';
 $lang['error_63'] = 'You can\'t extend your VIP to another package.';
+$lang['error_64'] = 'Your account doesn\'t have an email address, please contact support.';
+$lang['error_65'] = 'Your IP address is not valid, please contact support.';
 
 # registration
 $lang['register_txt_1'] = 'Username:';
@@ -204,7 +206,7 @@ $lang['vfc_txt_3'] = 'Vote Now!';
 
 # forgot password
 $lang['forgotpass_txt_1'] = 'Email Address:';
-$lang['forgotpass_txt_2'] = 'Send recovery email';
+$lang['forgotpass_txt_2'] = 'Send Recovery Email';
 
 # downloads
 $lang['downloads_txt_1'] = 'File';
