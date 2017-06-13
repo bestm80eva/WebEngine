@@ -3,7 +3,7 @@
  * WebEngine
  * http://muengine.net/
  * 
- * @version 1.0.9
+ * @version 2.0.0
  * @author Lautaro Angelico <http://lautaroangelico.com/>
  * @copyright (c) 2013-2017 Lautaro Angelico, All Rights Reserved
  * 
@@ -23,9 +23,6 @@ try {
 		echo '</div>';
 		echo '<div class="col-xs-4">';
 			echo '<a href="'.__BASE_URL__.'donation/paypal/" class="thumbnail"><img src="'.__PATH_TEMPLATE_IMG__.'donation/paypal.jpg"></a>';
-		echo '</div>';
-		echo '<div class="col-xs-4">';
-			echo '<a href="'.__BASE_URL__.'donation/westernunion/" class="thumbnail"><img src="'.__PATH_TEMPLATE_IMG__.'donation/westernunion.jpg"></a>';
 		echo '</div>';
 		echo '<div class="col-xs-4">';
 			echo '<a href="'.__BASE_URL__.'donation/paymentwall/" class="thumbnail"><img src="'.__PATH_TEMPLATE_IMG__.'donation/paymentwall.jpg"></a>';

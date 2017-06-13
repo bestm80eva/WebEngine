@@ -1,0 +1,11 @@
+CREATE TABLE [dbo].[WEBENGINE_SESSION_CONTROL](
+	[session_id] [varchar](50) NOT NULL,
+	[userid] [int] NULL,
+	[last_location] [varchar](100) NULL,
+	[last_activity] [datetime] NOT NULL,
+	[ip_address] [varchar](50) NOT NULL,
+ CONSTRAINT [PK_WEBENGINE_SESSION_CONTROL] PRIMARY KEY CLUSTERED 
+(
+	[session_id] ASC
+)WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON) ON [PRIMARY]
+) ON [PRIMARY]

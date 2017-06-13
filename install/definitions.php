@@ -3,7 +3,7 @@
  * WebEngine
  * http://muengine.net/
  * 
- * @version 1.0.9.5
+ * @version 2.0.0
  * @author Lautaro Angelico <http://lautaroangelico.com/>
  * @copyright (c) 2013-2017 Lautaro Angelico, All Rights Reserved
  * 
@@ -17,7 +17,7 @@ if(!defined('access') or !access or access != 'install') die();
  * INSTALLER_VERSION
  * installer version (do not change)
  */
-define('INSTALLER_VERSION', '1.0.9.5');
+define('INSTALLER_VERSION', '2.0.0');
 
 $install['PDO_DSN'] = array(
 	1 => 'dblib',
@@ -31,7 +31,6 @@ $install['SERVER_FILES'] = array(
 );
 
 $install['sql_list'] = array(
-	'WEBENGINE_ACTIVE_SESSIONS',
 	'WEBENGINE_BANS',
 	'WEBENGINE_BAN_LOG',
 	'WEBENGINE_BLOCKED_IP',
@@ -45,6 +44,7 @@ $install['sql_list'] = array(
 	'WEBENGINE_PAYPAL_TRANSACTIONS',
 	'WEBENGINE_PLUGINS',
 	'WEBENGINE_REGISTER_ACCOUNT',
+	'WEBENGINE_SESSION_CONTROL',
 	'WEBENGINE_SR_ERROR_LOGS',
 	'WEBENGINE_SR_TRANSACTIONS',
 	'WEBENGINE_VOTES',

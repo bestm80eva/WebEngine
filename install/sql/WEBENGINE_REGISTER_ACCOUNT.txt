@@ -2,9 +2,8 @@ CREATE TABLE [dbo].[WEBENGINE_REGISTER_ACCOUNT](
 	[registration_account] [varchar](50) NOT NULL,
 	[registration_password] [varchar](50) NOT NULL,
 	[registration_email] [varchar](50) NOT NULL,
-	[registration_date] [varchar](50) NOT NULL,
-	[registration_ip] [varchar](50) NOT NULL,
-	[registration_key] [varchar](50) NOT NULL,
+	[registration_date] [datetime] NOT NULL,
+	[registration_key] [int] NOT NULL,
  CONSTRAINT [PK_WEBENGINE_REGISTER_ACCOUNT] PRIMARY KEY CLUSTERED 
 (
 	[registration_account] ASC
