@@ -1,9 +1,9 @@
 <?php
 /**
- * WebEngine
- * http://muengine.net/
+ * WebEngine CMS
+ * https://webenginecms.org/
  * 
- * @version 1.0.9.4
+ * @version 2.0.0
  * @author Lautaro Angelico <http://lautaroangelico.com/>
  * @copyright (c) 2013-2017 Lautaro Angelico, All Rights Reserved
  * 
@@ -11,6 +11,11 @@
  * http://opensource.org/licenses/MIT
  */
 
+function check($value) {
+	if((@count($value)>0 and !@empty($value) and @isset($value)) || $value=='0') {
+		return true;
+	}
+}
 function check_value($value) {
 	if((@count($value)>0 and !@empty($value) and @isset($value)) || $value=='0') {
 		return true;
@@ -51,14 +56,12 @@ function redirect($type = 1, $location = null, $delay = 0) {
 }
 
 function isLoggedIn() {
-	$login = new login();
-	if($login->isLoggedIN()) return true;
+	if(sessionControl::isLoggedIn()) return true;
 	return;
 }
 
 function logOutUser() {
-	$login = new login();
-	$login->logout();
+	sessionControl::logout();
 }
 
 function message($type='info', $message="", $title="") {
@@ -248,7 +251,7 @@ function LoadCacheData($file_name) {
 function sec_to_hms($input_seconds=0) {
 	$result = sec_to_dhms($input_seconds);
 	if(!is_array($result)) return array(0,0,0);
-	return array((($result[0]*24)+$result[1]), $result[2], $result[3]);
+	return array($result[1], $result[2], $result[3]);
 }
 
 function sec_to_dhms($input_seconds=0) {
@@ -573,4 +576,45 @@ function loadConfig($name="webengine") {
 	$cfg = file_get_contents(__PATH_CONFIGS__ . $name . '.json');
 	if(!check_value($cfg)) return;
 	return json_decode($cfg, true);
+}
+
+function returnPlayerAvatar($code=0, $alt=true, $img_tags=true) {
+	global $custom;
+	
+	$fileName = (array_key_exists($code, $custom['character_class']) ? $custom['character_class'][$code][2] : 'avatar.jpg');
+	$image = __PATH_TEMPLATE_IMG__ . 'character-avatars/' . $fileName;
+	$name = $custom['character_class'][$code][0];
+	if($img_tags) {
+		if($alt) {
+			return '<img class="tables-character-class-img" src="'.$image.'" data-toggle="tooltip" data-placement="top" title="'.$name.'" alt="'.$name.'"/>';
+		} else {
+			return '<img class="tables-character-class-img" src="'.$image.'" />';
+		}
+	} else {
+		return $image;
+	}
+}
+
+function returnMapName($id) {
+	global $custom;
+	
+	if(!is_array($custom['map_list'])) return;
+	if(!array_key_exists($id, $custom['map_list'])) return;
+	return $custom['map_list'][$id];
+}
+
+function returnPkLevel($id) {
+	global $custom;
+	
+	if(!is_array($custom['pk_level'])) return;
+	if(!array_key_exists($id, $custom['pk_level'])) return;
+	return $custom['pk_level'][$id];
+}
+
+function custom($config) {
+	global $custom;
+	
+	if(!is_array($custom)) return;
+	if(!array_key_exists($config, $custom)) return;
+	return $custom[$config];
 }

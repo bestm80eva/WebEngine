@@ -1,7 +1,7 @@
 <?php
 /**
- * WebEngine
- * http://muengine.net/
+ * WebEngine CMS
+ * https://webenginecms.org/
  * 
  * @version 2.0.0
  * @author Lautaro Angelico <http://lautaroangelico.com/>

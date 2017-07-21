@@ -1,7 +1,7 @@
 <?php
 /**
- * WebEngine
- * http://muengine.net/
+ * WebEngine CMS
+ * https://webenginecms.org/
  * 
  * @version 2.0.0
  * @author Lautaro Angelico <http://lautaroangelico.com/>
@@ -35,11 +35,11 @@ $lang['module_titles_txt_4'] = 'My Account';
 $lang['module_titles_txt_5'] = 'Change Email';
 $lang['module_titles_txt_6'] = 'Change Password';
 $lang['module_titles_txt_7'] = 'Vote for Credits';
-$lang['module_titles_txt_8'] = 'Downloads';
+$lang['module_titles_txt_8'] = 'Game Downloads';
 $lang['module_titles_txt_9'] = 'Terms of Service';
-$lang['module_titles_txt_10'] = 'TOP Rankings';
+$lang['module_titles_txt_10'] = 'Rankings';
 $lang['module_titles_txt_11'] = 'Donate for Credits';
-$lang['module_titles_txt_12'] = 'Reset Character';
+$lang['module_titles_txt_12'] = 'Player Rebirth';
 $lang['module_titles_txt_13'] = 'Clear PK';
 $lang['module_titles_txt_14'] = 'Frequently Asked Questions';
 $lang['module_titles_txt_15'] = 'Password Recovery';
@@ -61,7 +61,7 @@ $lang['module_titles_txt_29'] = 'Castle Siege';
 # usercp
 $lang['usercp_menu_title'] = 'User Control Panel';
 $lang['usercp_menu_txt_1'] = 'My Account';
-$lang['usercp_menu_txt_2'] = 'Reset Character';
+$lang['usercp_menu_txt_2'] = 'Player Rebirth';
 $lang['usercp_menu_txt_3'] = 'Clear PK';
 $lang['usercp_menu_txt_4'] = 'Vote for Credits';
 $lang['usercp_menu_txt_5'] = 'Donate for Credits';
@@ -135,7 +135,7 @@ $lang['error_35'] = 'You do not have permission to reset this character\'s stats
 $lang['error_36'] = 'You do not have permission to reset this character\'s PK level.';
 $lang['error_37'] = 'You do not have permission to unstick this character\'s position.';
 $lang['error_38'] = 'You do not have permission to clear this character\'s skill tree.';
-$lang['error_39'] = 'Your master level must be ';
+$lang['error_39'] = 'Your character does not meet the master level requirement.';
 $lang['error_40'] = 'You do not have enough credits.';
 $lang['error_41'] = 'Please complete all fields.';
 $lang['error_42'] = 'Title can have a minimum of 4 characters and maximum of 80.';
@@ -155,13 +155,22 @@ $lang['error_55'] = 'Buying the selected amount will exceed the zen limit allowe
 $lang['error_56'] = 'The name entered is not valid.';
 $lang['error_57'] = 'The message entered is not valid.';
 $lang['error_58'] = 'There are no ranking results to display.';
-$lang['error_59'] = 'Could not determine which classes require CMD stat. Please condifure character_cmd in your custom file.';
+$lang['error_59'] = 'Could not determine which classes require CMD stat. Please configure character_cmd in your custom file.';
 $lang['error_60'] = 'The VIP package you selected is not available.';
 $lang['error_61'] = 'You currently have an active VIP subscription, please extend.';
 $lang['error_62'] = 'You don\'t have an active VIP subscription to extend.';
 $lang['error_63'] = 'You can\'t extend your VIP to another package.';
 $lang['error_64'] = 'Your account doesn\'t have an email address, please contact support.';
 $lang['error_65'] = 'Your IP address is not valid, please contact support.';
+$lang['error_66'] = 'Could not load configuration file.';
+$lang['error_67'] = 'We couldn\'t get your player information, if this problem persists contact support.';
+$lang['error_68'] = 'We couldn\'t perform your player\'s rebirth, please contact support.';
+$lang['error_69'] = 'We couldn\'t unstick your player, please contact support.';
+$lang['error_70'] = 'We couldn\'t clear your player kills, please contact support.';
+$lang['error_71'] = 'We couldn\'t reset your player stats, please contact support.';
+$lang['error_72'] = 'You do not have permission to add stats to this character.';
+$lang['error_73'] = 'We couldn\'t add your stats, please contact support.';
+$lang['error_74'] = 'We couldn\'t clear your character\'s skill tree, please contact support.';
 
 # registration
 $lang['register_txt_1'] = 'Username:';
@@ -262,6 +271,7 @@ $lang['clearpk_txt_2'] = 'Zen';
 $lang['clearpk_txt_3'] = 'Kills';
 $lang['clearpk_txt_4'] = 'Clear PK';
 $lang['clearpk_txt_5'] = 'Your character must have at least %s zen to clear pk';
+$lang['clearpk_txt_6'] = 'Pk Level';
 
 # clear skill tree
 $lang['clearst_txt_1'] = 'Character';
@@ -281,14 +291,14 @@ $lang['changepassword_txt_2'] = 'New Password:';
 $lang['changepassword_txt_3'] = 'Confirm New Password:';
 $lang['changepassword_txt_4'] = 'Change Password';
 
-# reset
+# rebirth
 $lang['resetcharacter_txt_1'] = 'Character';
 $lang['resetcharacter_txt_2'] = 'Level';
 $lang['resetcharacter_txt_3'] = 'Zen';
-$lang['resetcharacter_txt_4'] = 'Resets';
-$lang['resetcharacter_txt_5'] = 'Reset';
+$lang['resetcharacter_txt_4'] = 'Rebirths';
+$lang['resetcharacter_txt_5'] = 'Rebirth';
 $lang['resetcharacter_txt_6'] = 'Your character must be level %s';
-$lang['resetcharacter_txt_7'] = 'Your character must have at least %s zen to be reset';
+$lang['resetcharacter_txt_7'] = 'Your character must have at least %s zen to be rebirthed';
 $lang['resetcharacter_txt_8'] = 'You have been rewarded with %s credits!';
 
 # fix stats
@@ -307,6 +317,7 @@ $lang['unstickcharacter_txt_1'] = 'Character';
 $lang['unstickcharacter_txt_2'] = 'Zen';
 $lang['unstickcharacter_txt_3'] = 'Unstick';
 $lang['unstickcharacter_txt_4'] = 'Your character must have at least %s zen to unstick';
+$lang['unstickcharacter_txt_5'] = 'Location';
 
 # vip
 $lang['vip_txt_1'] = 'You have <b>%s</b> remaining VIP days.';

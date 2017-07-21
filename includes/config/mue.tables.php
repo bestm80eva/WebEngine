@@ -1,9 +1,9 @@
 <?php
 /**
- * WebEngine
- * http://muengine.net/
+ * WebEngine CMS
+ * https://webenginecms.org/
  * 
- * @version 1.0.9
+ * @version 2.0.0
  * @author Lautaro Angelico <http://lautaroangelico.com/>
  * @copyright (c) 2013-2017 Lautaro Angelico, All Rights Reserved
  * 
@@ -115,24 +115,26 @@ define('_TBL_MUCASTLE_RS_', 'MuCastle_REG_SIEGE');
  * custom: character_class
  */
 $custom['character_class'] = array(
-	0 => array('Dark Wizard', 'DW', 'dw.jpg'),
-	1 => array('Soul Master', 'SM', 'dw.jpg'),
-	3 => array('Grand Master', 'GM', 'dw.jpg'),
-	16 => array('Dark Knight', 'DK', 'dk.jpg'),
-	17 => array('Blade Knight', 'BK', 'dk.jpg'),
-	19 => array('Blade Master', 'BM', 'dk.jpg'),
-	32 => array('Elf', 'ELF', 'elf.jpg'),
-	33 => array('Muse Elf', 'ELF', 'elf.jpg'),
-	35 => array('High Elf', 'ELF', 'elf.jpg'),
-	48 => array('Magic Gladiator', 'MG', 'mg.jpg'),
-	50 => array('Duel Master', 'DM', 'mg.jpg'),
-	64 => array('Dark Lord', 'DL', 'dl.jpg'),
-	66 => array('Lord Emperor', 'LE', 'dl.jpg'),
-	80 => array('Summoner', 'SUM', 'sum.jpg'),
-	81 => array('Bloody Summoner', 'SUM', 'sum.jpg'),
-	83 => array('Dimension Master', 'SUM', 'sum.jpg'),
-	96 => array('Rage Fighter', 'RF', 'rf.jpg'),
-	98 => array('Fist Master', 'FM', 'rf.jpg')
+	0 => array('Dark Wizard', 'DW', 'dw.jpg', 'base_stats' => array('str' => 18, 'agi' => 18, 'vit' => 15, 'ene' => 30, 'cmd' => 0)),
+	1 => array('Soul Master', 'SM', 'dw.jpg', 'base_stats' => array('str' => 18, 'agi' => 18, 'vit' => 15, 'ene' => 30, 'cmd' => 0)),
+	3 => array('Grand Master', 'GM', 'dw.jpg', 'base_stats' => array('str' => 18, 'agi' => 18, 'vit' => 15, 'ene' => 30, 'cmd' => 0)),
+	16 => array('Dark Knight', 'DK', 'dk.jpg', 'base_stats' => array('str' => 28, 'agi' => 20, 'vit' => 25, 'ene' => 10, 'cmd' => 0)),
+	17 => array('Blade Knight', 'BK', 'dk.jpg', 'base_stats' => array('str' => 28, 'agi' => 20, 'vit' => 25, 'ene' => 10, 'cmd' => 0)),
+	19 => array('Blade Master', 'BM', 'dk.jpg', 'base_stats' => array('str' => 28, 'agi' => 20, 'vit' => 25, 'ene' => 10, 'cmd' => 0)),
+	32 => array('Elf', 'ELF', 'elf.jpg', 'base_stats' => array('str' => 22, 'agi' => 25, 'vit' => 15, 'ene' => 20, 'cmd' => 0)),
+	33 => array('Muse Elf', 'ELF', 'elf.jpg', 'base_stats' => array('str' => 22, 'agi' => 25, 'vit' => 15, 'ene' => 20, 'cmd' => 0)),
+	35 => array('High Elf', 'ELF', 'elf.jpg', 'base_stats' => array('str' => 22, 'agi' => 25, 'vit' => 15, 'ene' => 20, 'cmd' => 0)),
+	48 => array('Magic Gladiator', 'MG', 'mg.jpg', 'base_stats' => array('str' => 26, 'agi' => 26, 'vit' => 26, 'ene' => 16, 'cmd' => 0)),
+	50 => array('Duel Master', 'DM', 'mg.jpg', 'base_stats' => array('str' => 26, 'agi' => 26, 'vit' => 26, 'ene' => 16, 'cmd' => 0)),
+	64 => array('Dark Lord', 'DL', 'dl.jpg', 'base_stats' => array('str' => 26, 'agi' => 20, 'vit' => 20, 'ene' => 15, 'cmd' => 25)),
+	66 => array('Lord Emperor', 'LE', 'dl.jpg', 'base_stats' => array('str' => 26, 'agi' => 20, 'vit' => 20, 'ene' => 15, 'cmd' => 25)),
+	80 => array('Summoner', 'SUM', 'sum.jpg', 'base_stats' => array('str' => 21, 'agi' => 21, 'vit' => 18, 'ene' => 23, 'cmd' => 0)),
+	81 => array('Bloody Summoner', 'SUM', 'sum.jpg', 'base_stats' => array('str' => 21, 'agi' => 21, 'vit' => 18, 'ene' => 23, 'cmd' => 0)),
+	83 => array('Dimension Master', 'SUM', 'sum.jpg', 'base_stats' => array('str' => 21, 'agi' => 21, 'vit' => 18, 'ene' => 23, 'cmd' => 0)),
+	96 => array('Rage Fighter', 'RF', 'rf.jpg', 'base_stats' => array('str' => 32, 'agi' => 27, 'vit' => 25, 'ene' => 20, 'cmd' => 0)),
+	98 => array('Fist Master', 'FM', 'rf.jpg', 'base_stats' => array('str' => 32, 'agi' => 27, 'vit' => 25, 'ene' => 20, 'cmd' => 0)),
+	112 => array('Grow Lancer', 'GL', 'gl.jpg', 'base_stats' => array('str' => 30, 'agi' => 30, 'vit' => 25, 'ene' => 24, 'cmd' => 0)),
+	114 => array('Mirage Lancer', 'ML', 'gl.jpg', 'base_stats' => array('str' => 30, 'agi' => 30, 'vit' => 25, 'ene' => 24, 'cmd' => 0)),
 );
 
 /*
@@ -160,4 +162,89 @@ $custom['gens_ranks'] = array(
 	12 => 'Lieutenant',
 	13 => 'Sergeant',
 	14 => 'Private',
+);
+
+/*
+ * custom: map_list
+ */
+$custom['map_list'] = array(
+	0 => 'Lorencia',
+	1 => 'Dungeon',
+	2 => 'Devias',
+	3 => 'Noria',
+	4 => 'LostTower',
+	5 => 'Exile',
+	6 => 'Arena',
+	7 => 'Atlans',
+	8 => 'Tarkan',
+	9 => 'Devil Square',
+	10 => 'Icarus',
+	11 => 'Blood Castle 1',
+	12 => 'Blood Castle 2',
+	13 => 'Blood Castle 3',
+	14 => 'Blood Castle 4',
+	15 => 'Blood Castle 5',
+	16 => 'Blood Castle 6',
+	17 => 'Blood Castle 7',
+	18 => 'Chaos Castle 1',
+	19 => 'Chaos Castle 2',
+	20 => 'Chaos Castle 3',
+	21 => 'Chaos Castle 4',
+	22 => 'Chaos Castle 5',
+	23 => 'Chaos Castle 6',
+	24 => 'Kalima 1',
+	25 => 'Kalima 2',
+	26 => 'Kalima 3',
+	27 => 'Kalima 4',
+	28 => 'Kalima 5',
+	29 => 'Kalima 6',
+	36 => 'Kalima 7',
+	30 => 'Valley of Loren',
+	31 => 'Land of Trials',
+	32 => 'Devil Square',
+	33 => 'Aida',
+	34 => 'Crywolf Fortress',
+	37 => 'Kanturu',
+	38 => 'Kanturu 2',
+	39 => 'Kanturu 3',
+	40 => 'Silent Map',
+	41 => 'Barracks of Balgass',
+	42 => 'Balgass Refuge',
+	45 => 'Illusion Temple 1',
+	46 => 'Illusion Temple 2',
+	47 => 'Illusion Temple 3',
+	48 => 'Illusion Temple 4',
+	49 => 'Illusion Temple 5',
+	50 => 'Illusion Temple 6',
+	51 => 'Elbeland',
+	52 => 'Blood Castle 8',
+	53 => 'Chaos Castle 7',
+	56 => 'Swamp of Calmness',
+	57 => 'Raklion',
+	58 => 'Raklion Boss',
+	62 => 'Village\'s Santa',
+	63 => 'Vulcanus',
+	64 => 'Duel Arena',
+	65 => 'Doppelganger',
+	66 => 'Doppelganger',
+	67 => 'Doppelganger',
+	68 => 'Doppelganger',
+	69 => 'Doppelganger',
+	69 => 'Empire Fortress',
+	70 => 'Empire Fortress',
+	71 => 'Empire Fortress',
+	72 => 'Empire Fortress',
+);
+
+/*
+ * custom: pk_level
+ */
+$custom['pk_level'] = array(
+	0 => 'Normal',
+	1 => 'Hero',
+	2 => 'Hero',
+	3 => 'Commoner',
+	4 => 'Warning',
+	5 => 'Murder',
+	6 => 'Outlaw',
 );

@@ -1,11 +1,25 @@
 <?php
+/**
+ * WebEngine CMS
+ * https://webenginecms.org/
+ * 
+ * @version 2.0.0
+ * @author Lautaro Angelico <http://lautaroangelico.com/>
+ * @copyright (c) 2013-2017 Lautaro Angelico, All Rights Reserved
+ * 
+ * Licensed under the MIT license
+ * http://opensource.org/licenses/MIT
+ */
+
 class Handler {
 	
 	private static $muonline;
 	private static $memuonline;
-	private static $defaultModule = 'home';
+	private static $defaultModule = 'news';
 	
 	private static $regexPattern = '/[^a-zA-Z0-9\/]/';
+	
+	private static $moduleTitlePhrase;
 	
 	public static function loadTemplate() {
 		global $lang;
@@ -16,6 +30,10 @@ class Handler {
 					self::loadTemplateIndex();
 				} elseif(access == "cron") {
 					// do not load anything (for crons)
+				} elseif(access == "api") {
+					// do not load anything (for apis)
+				} elseif(access == "admincp") {
+					// admincp
 				} else {
 					throw new Exception("No Access");
 				}
@@ -47,6 +65,7 @@ class Handler {
 						}
 						if(check($_GET['submodule'])) $_GET['submodule'] .= "/";
 						$_GET['submodule'] .= $thisReq;
+						if(!check(self::$moduleTitlePhrase)) self::$moduleTitlePhrase = $subModuleData['module_title'];
 					} else {
 						$parentModuleData = $dB->query_fetch_single("SELECT * FROM WEBENGINE_MODULES WHERE module_file = ? AND module_parent IS NULL AND module_status = 1", array($parentModule));
 						if($parentModuleData['access'] == 2) {
@@ -55,6 +74,7 @@ class Handler {
 						}
 						//$_GET['module'] = "404";
 						//$_GET['submodule'] = "";
+						if(!check(self::$moduleTitlePhrase)) self::$moduleTitlePhrase = $parentModuleData['module_title'];
 					}
 				}
 			}
@@ -82,11 +102,12 @@ class Handler {
 					# check if logged in
 					if(!isLoggedIn()) redirect('login/');
 				}
+				if(!check(self::$moduleTitlePhrase)) self::$moduleTitlePhrase = $topModuleData['module_title'];
 			}
 		}
 		
 		
-		$module = (check(self::cleanModuleRequest($_GET['module'])) ? self::cleanModuleRequest($_GET['module']) : 'home');
+		$module = (check(self::cleanModuleRequest($_GET['module'])) ? self::cleanModuleRequest($_GET['module']) : self::$defaultModule);
 		$submodule = self::cleanModuleRequest($_GET['submodule']);
 		
 		# SESSION
@@ -117,7 +138,20 @@ class Handler {
 	}
 	
 	private static function loadPage($path) {
-		include($path);
+		global $custom;
+		try {
+			
+			# module title
+			if(check(self::$moduleTitlePhrase)) {
+				echo '<div class="page-title"><span>'.lang(self::$moduleTitlePhrase,true).'</span></div>';
+			}
+			
+			# module file
+			include($path);
+			
+		} catch(Exception $ex) {
+			message('error', $ex->getMessage());
+		}
 	}
 	
 	private static function moduleExists($request) {

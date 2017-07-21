@@ -1,9 +1,9 @@
 <?php
 /**
- * WebEngine
- * http://muengine.net/
+ * WebEngine CMS
+ * https://webenginecms.org/
  * 
- * @version 1.0.9
+ * @version 2.0.0
  * @author Lautaro Angelico <http://lautaroangelico.com/>
  * @copyright (c) 2013-2017 Lautaro Angelico, All Rights Reserved
  * 
@@ -12,6 +12,8 @@
  */
 
 class Rankings {
+	
+	private $_cfg;
 	
 	private $_results;
 	private $_excludedCharacters;
@@ -24,10 +26,13 @@ class Rankings {
 		$this->config = webengineConfigs();
 		$this->serverFiles = $this->config['server_files'];
 		
-		loadModuleConfigs('rankings');
-		$this->_results = (check_value(mconfig('rankings_results')) ? mconfig('rankings_results') : 25);
+		$cfg = loadConfigurations('rankings');
+		if(!is_array($cfg)) throw new Exception(lang('error_66',true));
+		$this->_cfg = $cfg;
 		
-		$excludedCharacters = explode(",", mconfig('rankings_excluded_characters'));
+		$this->_results = (check_value($this->_cfg['rankings_results']) ? $this->_cfg['rankings_results'] : 25);
+		
+		$excludedCharacters = explode(",", $this->_cfg['rankings_excluded_characters']);
 		$this->_excludedCharacters = $excludedCharacters;
 	}
    
@@ -215,11 +220,12 @@ class Rankings {
 					$muLogEx = $this->me->query_fetch("SELECT TOP ".$this->_results." "._CLMN_LOGEX_ACCID_.", sum("._CLMN_LOGEX_OD_.") as TotalOnlineTime FROM "._TBL_LOGEX_." GROUP BY "._CLMN_LOGEX_ACCID_." ORDER BY TotalOnlineTime DESC");
 					if(is_array($muLogEx)) {
 						$result = array();
-						$character = new Character();
+						$Player = new Player();
 						foreach($muLogEx as $key => $thisUser) {
-							$characterName = $character->AccountCharacterIDC($thisUser[_CLMN_LOGEX_ACCID_]);
-							$characterData = $character->CharacterData($characterName);
-							$result[$key] = array($characterName, $thisUser['TotalOnlineTime'], $characterData[_CLMN_CHR_CLASS_]);
+							$Player->setUsername($thisUser[_CLMN_LOGEX_ACCID_]);
+							$playerName = $Player->getAccountPlayerIDC();
+							$playerInformation = $Player->getPlayerInformation();
+							$result[$key] = array($playerName, $thisUser['TotalOnlineTime'], $playerInformation[_CLMN_CHR_CLASS_]);
 						}
 					}
 				} else {
@@ -237,16 +243,16 @@ class Rankings {
 	
 	public function rankingsMenu() {
 		$rankings_menu = array(
-			array(lang('rankings_txt_1',true), 'level', mconfig('rankings_enable_level')),
-			array(lang('rankings_txt_2',true), 'resets', mconfig('rankings_enable_resets')),
-			array(lang('rankings_txt_3',true), 'killers', mconfig('rankings_enable_pk')),
-			array(lang('rankings_txt_4',true), 'guilds', mconfig('rankings_enable_guilds')),
-			array(lang('rankings_txt_5',true), 'grandresets', mconfig('rankings_enable_gr')),
-			array(lang('rankings_txt_6',true), 'online', mconfig('rankings_enable_online')),
-			array(lang('rankings_txt_7',true), 'votes', mconfig('rankings_enable_votes')),
-			array(lang('rankings_txt_8',true), 'gens', mconfig('rankings_enable_gens')),
-			array(lang('rankings_txt_22',true), 'master', mconfig('rankings_enable_master')),
-			array(lang('rankings_txt_24',true), 'pvplaststand', mconfig('rankings_enable_pvplaststand')),
+			array(lang('rankings_txt_1',true), 'level', $this->_cfg['rankings_enable_level']),
+			array(lang('rankings_txt_2',true), 'resets', $this->_cfg['rankings_enable_resets']),
+			array(lang('rankings_txt_3',true), 'killers', $this->_cfg['rankings_enable_pk']),
+			array(lang('rankings_txt_4',true), 'guilds', $this->_cfg['rankings_enable_guilds']),
+			array(lang('rankings_txt_5',true), 'grandresets', $this->_cfg['rankings_enable_gr']),
+			array(lang('rankings_txt_6',true), 'online', $this->_cfg['rankings_enable_online']),
+			array(lang('rankings_txt_7',true), 'votes', $this->_cfg['rankings_enable_votes']),
+			array(lang('rankings_txt_8',true), 'gens', $this->_cfg['rankings_enable_gens']),
+			array(lang('rankings_txt_22',true), 'master', $this->_cfg['rankings_enable_master']),
+			array(lang('rankings_txt_24',true), 'pvplaststand', $this->_cfg['rankings_enable_pvplaststand']),
 		);
 
 		echo '<div class="rankings_menu">';

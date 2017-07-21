@@ -1,9 +1,9 @@
 <?php
 /**
- * WebEngine
- * http://muengine.net/
+ * WebEngine CMS
+ * https://webenginecms.org/
  * 
- * @version 1.0.9
+ * @version 2.0.0
  * @author Lautaro Angelico <http://lautaroangelico.com/>
  * @copyright (c) 2013-2017 Lautaro Angelico, All Rights Reserved
  * 
@@ -19,36 +19,31 @@ class Vote {
 	private $_accountInfo;
 	private $_ip;
 	
-	private $_configXml = 'usercp.vote.xml';
 	private $_active = true;
 	private $_saveLogs = true;
 	private $_creditConfig;
 	
-	function __construct(common $common, db $muonline, db $me_muonline = null) {
-		$this->common = $common;
-		$this->muonline = $muonline;
-		if($me_muonline) {
-			$this->memuonline = $me_muonline;
-		}
+	function __construct() {
+		global $dB;
 		
-		# Load Configurations
-		$this->xml = simplexml_load_file(__PATH_MODULE_CONFIGS__ . $this->_configXml);
-		if(!$this->xml) throw new Exception("Could not load module configuration, please contact the Administrator.");
+		$this->db = $dB;
 		
-		$xmlConfig = convertXML($this->xml);
-		$this->_active = $xmlConfig['active'];
-		$this->_saveLogs = $xmlConfig['vote_save_logs'];
-		$this->_creditConfig = $xmlConfig['credit_config'];
+		# load configurations
+		$cfg = loadConfigurations('usercp.vote');
+		if(!is_array($cfg)) throw new Exception(lang('error_66',true));
+		
+		$this->_active = $cfg['active'];
+		$this->_saveLogs = $cfg['vote_save_logs'];
+		$this->_creditConfig = $cfg['credit_config'];
 	}
 	
 	public function setUserid($userid) {
-		if(!check_value($userid)) throw new Exception(lang('error_23', true));
-		if(!Validator::UnsignedNumber($userid)) throw new Exception(lang('error_23', true));
+		$Account = new Account();
+		$Account->setUserid($userid);
 		
-		$accountInfo = $this->common->accountInformation($userid);
-		if(!is_array($accountInfo)) throw new Exception(lang('error_23', true));
+		$this->_accountInfo = $Account->getAccountData();
+		if(!is_array($this->_accountInfo)) throw new Exception('Error loading account information.');
 		
-		$this->_accountInfo = $accountInfo;
 		$this->_userid = $userid;
 		$this->_username = $this->_accountInfo[_CLMN_USERNM_];
 	}
@@ -73,27 +68,28 @@ class Vote {
 		if(!check_value($this->_ip)) throw new Exception(lang('error_23', true));
 		if(!check_value($this->_votesideId)) throw new Exception(lang('error_23', true));
 		
-		# check if voting is active
+		// check if voting is active
 		if(!$this->_active) throw new Exception(lang('error_47', true));
 		
-		# check credit config
+		// check credit config
 		if($this->_creditConfig == 0) throw new Exception("This module is not properly configured, please contact the Administrator.");
 		
-		# check if user can vote
+		// check if user can vote
 		if(!$this->_canUserVote()) throw new Exception(lang('error_15', true));
 		
-		# check if ip can vote
+		// check if ip can vote
 		if(!$this->_canIPVote()) throw new Exception(lang('error_14', true));
 		
-		# retrieve votesite data
+		// retrieve votesite data
 		$voteSite = $this->retrieveVotesites($this->_votesideId);
 		if(!is_array($voteSite)) throw new Exception(lang('error_23', true));
 		
 		$voteLink = $voteSite['votesite_link'];
 		$creditsReward = $voteSite['votesite_reward'];
 		
-		# reward user
-		$creditSystem = new CreditSystem($this->common, new Character(), $this->muonline, $this->memuonline);
+		// reward user
+		/*
+		$creditSystem = new CreditSystem($this->common, new Character(), $this->db, $this->memuonline);
 		$creditSystem->setConfigId($this->_creditConfig);
 		$configSettings = $creditSystem->showConfigs(true);
 		switch($configSettings['config_user_col_id']) {
@@ -107,16 +103,17 @@ class Vote {
 				throw new Exception("Invalid identifier (credit system).");
 		}
 		$creditSystem->addCredits($creditsReward);
+		*/
 		
-		# add vote record
+		// add vote record
 		$this->_addRecord();
 		
-		# add vote log
+		// add vote log
 		if($this->_saveLogs) {
 			$this->_logVote();
 		}
 		
-		# redirect
+		// redirect
 		redirect(3, $voteLink);
 	}
 
@@ -125,7 +122,7 @@ class Vote {
 		if(!check_value($this->_votesideId)) throw new Exception(lang('error_23', true));
 		
 		$query = "SELECT * FROM WEBENGINE_VOTES WHERE user_id = ? AND vote_site_id = ?";
-		$check = $this->muonline->query_fetch_single($query, array($this->_userid, $this->_votesideId));
+		$check = $this->db->query_fetch_single($query, array($this->_userid, $this->_votesideId));
 		
 		if(!is_array($check)) return true;
 		if($this->_timePassed($check['timestamp'])) {
@@ -138,7 +135,7 @@ class Vote {
 		if(!check_value($this->_votesideId)) throw new Exception(lang('error_23', true));
 		
 		$query = "SELECT * FROM WEBENGINE_VOTES WHERE user_ip = ? AND vote_site_id = ?";
-		$check = $this->muonline->query_fetch_single($query, array($this->_ip, $this->_votesideId));
+		$check = $this->db->query_fetch_single($query, array($this->_ip, $this->_votesideId));
 		
 		if(!is_array($check)) return true;
 		if($this->_timePassed($check['timestamp'])) {
@@ -163,12 +160,12 @@ class Vote {
 			$timestamp
 		);
 		
-		$add = $this->muonline->query("INSERT INTO WEBENGINE_VOTES (user_id, user_ip, vote_site_id, timestamp) VALUES (?, ?, ?, ?)", $data);
+		$add = $this->db->query("INSERT INTO WEBENGINE_VOTES (user_id, user_ip, vote_site_id, timestamp) VALUES (?, ?, ?, ?)", $data);
 		if(!$add) throw new Exception(lang('error_23', true));
 	}
 	
 	private function _removeRecord($id) {
-		$remove = $this->muonline->query("DELETE FROM WEBENGINE_VOTES WHERE id = ?", array($id));
+		$remove = $this->db->query("DELETE FROM WEBENGINE_VOTES WHERE id = ?", array($id));
 		if($remove) return true;
 		return false;
 	}
@@ -180,7 +177,7 @@ class Vote {
 	
 	private function _siteExists($id) {
 		if(!check_value($id)) return;
-		$check = $this->muonline->query_fetch_single("SELECT * FROM WEBENGINE_VOTE_SITES WHERE votesite_id = ?", array($id));
+		$check = $this->db->query_fetch_single("SELECT * FROM WEBENGINE_VOTE_SITES WHERE votesite_id = ?", array($id));
 		if(is_array($check)) return true;
 		return false;
 	}
@@ -195,25 +192,25 @@ class Vote {
 			time()
 		);
 		
-		$add_log = $this->muonline->query("INSERT INTO WEBENGINE_VOTE_LOGS (user_id,votesite_id,timestamp) VALUES (?,?,?)", $add_data);
+		$add_log = $this->db->query("INSERT INTO WEBENGINE_VOTE_LOGS (user_id,votesite_id,timestamp) VALUES (?,?,?)", $add_data);
 		if(!$add_log) return false;
 		return true;
 	}
 	
 	public function addVotesite($title, $link, $reward, $time) {
-		$result = $this->muonline->query("INSERT INTO WEBENGINE_VOTE_SITES (votesite_title,votesite_link,votesite_reward,votesite_time) VALUES (?,?,?,?)", array($title,$link,$reward,$time));
+		$result = $this->db->query("INSERT INTO WEBENGINE_VOTE_SITES (votesite_title,votesite_link,votesite_reward,votesite_time) VALUES (?,?,?,?)", array($title,$link,$reward,$time));
 		if($result) return true;
 	}
 	
 	public function deleteVotesite($id) {
 		if(!$this->_siteExists($id)) return;
-		$result = $this->muonline->query("DELETE FROM WEBENGINE_VOTE_SITES WHERE votesite_id = ?", array($id));
+		$result = $this->db->query("DELETE FROM WEBENGINE_VOTE_SITES WHERE votesite_id = ?", array($id));
 		if($result) return $result;
 	}
 	
 	public function retrieveVotesites($id=null) {
-		if(check_value($id)) return $this->muonline->query_fetch_single("SELECT * FROM WEBENGINE_VOTE_SITES WHERE votesite_id = ?", array($id));
-		return $this->muonline->query_fetch("SELECT * FROM WEBENGINE_VOTE_SITES ORDER BY votesite_id ASC");
+		if(check_value($id)) return $this->db->query_fetch_single("SELECT * FROM WEBENGINE_VOTE_SITES WHERE votesite_id = ?", array($id));
+		return $this->db->query_fetch("SELECT * FROM WEBENGINE_VOTE_SITES ORDER BY votesite_id ASC");
 	}
 
 }

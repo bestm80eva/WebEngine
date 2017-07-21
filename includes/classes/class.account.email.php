@@ -1,7 +1,7 @@
 <?php
 /**
- * WebEngine
- * http://muengine.net/
+ * WebEngine CMS
+ * https://webenginecms.org/
  * 
  * @version 2.0.0
  * @author Lautaro Angelico <http://lautaroangelico.com/>
@@ -19,6 +19,7 @@ class AccountEmail extends Account {
 	}
 	
 	public function changeEmailAddress($accountId, $newEmail, $ipAddress) {
+		return;
 		if(!check_value($accountId)) throw new Exception(lang('error_21',true));
 		if(!check_value($newEmail)) throw new Exception(lang('error_21',true));
 		if(!check_value($ipAddress)) throw new Exception(lang('error_21',true));
@@ -51,6 +52,7 @@ class AccountEmail extends Account {
 	}
 	
 	public function changeEmailVerificationProcess($encodedId, $newEmail, $encryptedKey) {
+		return;
 		$userId = Decode_id($encodedId);
 		if(!Validator::UnsignedNumber($userId)) throw new Exception(lang('error_21',true));
 		if(!Validator::Email($newEmail)) throw new Exception(lang('error_21',true));
@@ -72,6 +74,7 @@ class AccountEmail extends Account {
 	}
 	
 	private function changeEmailVerificationMail($userName, $emailAddress, $newEmail, $verificationLink, $ipAddress) {
+		return;
 		try {
 			$email = new Email();
 			$email->setTemplate('CHANGE_EMAIL_VERIFICATION');
@@ -89,6 +92,7 @@ class AccountEmail extends Account {
 	}
 	
 	private function generateAccountRecoveryLink($userid,$email,$recovery_code) {
+		return;
 		if(!check_value($userid)) return;
 		if(!check_value($recovery_code)) return;
 		
